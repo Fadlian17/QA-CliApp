@@ -10,14 +10,16 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "axios": "^1.7.9"
+    "axios": "^1.7.9",
+    "figlet": "^1.8.0"
   },
   "pkg": {
-  "scripts": [
-    "node_modules/axios/dist/node/axios.cjs"
-  ],
-  "assets": [
-    "node_modules/axios/**/*"
-  ]
+    "scripts": [
+      "node_modules/axios/dist/node/axios.cjs"
+    ],
+    "assets": [
+      "node_modules/axios/**/*",
+      "node_modules/figlet/fonts/**"
+    ]
   }
 }

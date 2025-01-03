@@ -4,6 +4,7 @@
 
 const axios = require('axios');
 const fs = require('fs');
+const figlet = require('figlet');
 
 // Extract command-line arguments
 const args = process.argv.slice(2);
@@ -62,5 +63,14 @@ async function makeRequest(method, url, data) {
     }
 }
 
-// Execute the request
-makeRequest(method, url, data);
+// Display a welcome message using figlet
+figlet('CLI API Tester', (err, data) => {
+    if (err) {
+        console.error('Something went wrong with figlet...');
+        console.dir(err);
+        return;
+    }
+    console.log(data);
+    // Execute the request after displaying the welcome message
+    makeRequest(method, url, data);
+});
