@@ -5,26 +5,59 @@
 const axios = require('axios');
 const fs = require('fs');
 const figlet = require('figlet');
+const inquirer = require('inquirer');
+const urlValidator = require('valid-url');
 
-// Extract command-line arguments
-const args = process.argv.slice(2);
-
-// Validate the number of arguments
-if (args.length < 2) {
-    console.error('Usage: node cli-api.js <method> <url> [data] [--output <filename>]');
-    process.exit(1);
-}
-
-// Extract method, URL, and optional data
-const method = args[0].toUpperCase();
-const url = args[1];
-let data = args[2] && !args[2].startsWith('--') ? JSON.parse(args[2]) : null;
-let outputFile = null;
-
-// Check for output file argument
-const outputIndex = args.indexOf('--output');
-if (outputIndex !== -1 && args[outputIndex + 1]) {
-    outputFile = args[outputIndex + 1];
+/**
+ * Prompts the user for input using inquirer.
+ * @returns {Promise<Object>} A promise that resolves to an object containing user input.
+ */
+async function promptUser() {
+    try {
+        return await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'method',
+                message: 'Choose the HTTP method:',
+                choices: ['GET', 'POST', 'PUT', 'DELETE'],
+            },
+            {
+                type: 'input',
+                name: 'url',
+                message: 'Enter the URL:',
+                validate: (input) => {
+                    // URL validation check
+                    if (!urlValidator.isUri(input)) {
+                        return 'Please enter a valid URL.';
+                    }
+                    return true;
+                },
+            },
+            {
+                type: 'input',
+                name: 'data',
+                message: 'Enter the JSON data (leave empty if not applicable):',
+                validate: (input) => {
+                    if (input.trim() === '') return true;
+                    try {
+                        JSON.parse(input); // Check if the input is valid JSON
+                        return true;
+                    } catch (e) {
+                        return 'Invalid JSON format.';
+                    }
+                },
+            },
+            {
+                type: 'input',
+                name: 'outputFile',
+                message: 'Enter the output filename (leave empty if not applicable):',
+                default: '', // Default to an empty string if the user does not specify a file.
+            },
+        ]);
+    } catch (error) {
+        console.error('Error during user prompt:', error);
+        process.exit(1);
+    }
 }
 
 /**
@@ -33,19 +66,20 @@ if (outputIndex !== -1 && args[outputIndex + 1]) {
  * @param {string} method - The HTTP method (GET, POST, PUT, DELETE).
  * @param {string} url - The URL to send the request to.
  * @param {Object|null} data - The data to send with the request (for POST/PUT).
+ * @param {string|null} outputFile - The filename to save the response data.
  */
-async function makeRequest(method, url, data) {
+async function makeRequest(method, url, data, outputFile) {
     try {
         // Make the HTTP request using axios
         const response = await axios({
             method,
             url,
-            data,
+            data: data ? JSON.parse(data) : null, // Only parse if data is provided
         });
 
         // Log the response status and data
         console.log('Status:', response.status);
-        console.log('Data:', response.data);
+        console.log('Data:', JSON.stringify(response.data, null, 2));
 
         // Save response data to a file if outputFile is specified
         if (outputFile) {
@@ -56,7 +90,7 @@ async function makeRequest(method, url, data) {
         // Handle errors and log appropriate messages
         if (error.response) {
             console.error('Error Status:', error.response.status);
-            console.error('Error Data:', error.response.data);
+            console.error('Error Data:', JSON.stringify(error.response.data, null, 2));
         } else {
             console.error('Error:', error.message);
         }
@@ -64,13 +98,23 @@ async function makeRequest(method, url, data) {
 }
 
 // Display a welcome message using figlet
-figlet('CLI API Tester', (err, data) => {
+figlet('CLI API Tester', async (err, data) => {
     if (err) {
         console.error('Something went wrong with figlet...');
         console.dir(err);
         return;
     }
     console.log(data);
-    // Execute the request after displaying the welcome message
-    makeRequest(method, url, data);
+
+    // Prompt the user for input
+    const userInput = await promptUser();
+
+    // Ensure URL and method are not empty
+    if (!userInput.url || !userInput.method) {
+        console.error('Both URL and HTTP method are required.');
+        return;
+    }
+
+    // Execute the request with user input
+    await makeRequest(userInput.method, userInput.url, userInput.data, userInput.outputFile);
 });
