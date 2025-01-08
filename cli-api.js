@@ -8,6 +8,30 @@ const figlet = require('figlet');
 const inquirer = require('inquirer');
 const urlValidator = require('valid-url');
 
+// Function to display help information
+function displayHelp() {
+    console.log(`
+Usage: node cliTester.js [options]
+
+Options:
+  --help, -h       Show help information
+  --method, -m     Specify the HTTP method (GET, POST, PUT, DELETE)
+  --url, -u        Specify the URL for the request
+  --data, -d       Specify the JSON data for POST/PUT requests
+  --output, -o     Specify the output filename to save the response
+
+Example:
+  node cliTester.js --method GET --url https://api.example.com --output response.json
+`);
+    process.exit(0);
+}
+
+// Check for help argument
+const args = process.argv.slice(2);
+if (args.includes('--help') || args.includes('-h')) {
+    displayHelp();
+}
+
 /**
  * Prompts the user for input using inquirer.
  * @returns {Promise<Object>} A promise that resolves to an object containing user input.
